@@ -301,7 +301,7 @@ PlanBuilder& PlanBuilder::projectExpressions(
       nextPlanNodeId(),
       std::move(projectNames),
       std::move(expressions),
-      planNode_);
+      planNode_);//
   return *this;
 }
 
@@ -310,7 +310,7 @@ PlanBuilder& PlanBuilder::project(const std::vector<std::string>& projections) {
   std::vector<std::shared_ptr<const core::IExpr>> expressions;
   for (auto i = 0; i < projections.size(); ++i) {
     expressions.push_back(parse::parseExpr(projections[i], options_));
-  }
+  }//hc---project all expression linearly
   return projectExpressions(expressions);
 }
 
@@ -336,7 +336,7 @@ PlanBuilder& PlanBuilder::filter(const std::string& filter) {
   VELOX_CHECK_NOT_NULL(planNode_, "Filter cannot be the source node");
   planNode_ = std::make_shared<core::FilterNode>(
       nextPlanNodeId(),
-      parseExpr(filter, planNode_->outputType(), options_, pool_),
+      parseExpr(filter, planNode_->outputType(), options_, pool_),//hc---important source node
       planNode_);
   return *this;
 }

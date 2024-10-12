@@ -62,7 +62,7 @@ HashTable<ignoreNullKeys>::HashTable(
     keys.push_back(hasher->type());
     if (!VectorHasher::typeKindSupportsValueIds(hasher->typeKind())) {
       hashMode_ = HashMode::kHash;
-    }
+    }//hc---hash mode?
   }
 
   rows_ = std::make_unique<RowContainer>(
@@ -454,7 +454,7 @@ void HashTable<ignoreNullKeys>::groupProbe(HashLookup& lookup) {
   incrementProbes(lookup.rows.size());
 
   if (hashMode_ == HashMode::kArray) {
-    arrayGroupProbe(lookup);
+    arrayGroupProbe(lookup);//hc--- do array group probe here;
     return;
   }
   // Do size-based rehash before mixing hashes from normalized keys
@@ -1058,7 +1058,7 @@ void HashTable<ignoreNullKeys>::buildJoinPartition(
     }
   }
 }
-
+//hc----insertBatch!!!!
 template <bool ignoreNullKeys>
 bool HashTable<ignoreNullKeys>::insertBatch(
     char** groups,
@@ -2090,8 +2090,8 @@ void BaseHashTable::prepareForGroupProbe(
   auto& hashers = lookup.hashers;
 
   for (auto& hasher : hashers) {
-    auto key = input->childAt(hasher->channel())->loadedVector();
-    hasher->decode(*key, rows);
+    auto keys = input->childAt(hasher->channel())->loadedVector();
+    hasher->decode(*keys, rows);//hc---decode before doing hash, push vector into rows
   }
 
   if (ignoreNullKeys) {
@@ -2106,7 +2106,7 @@ void BaseHashTable::prepareForGroupProbe(
   for (auto i = 0; i < hashers.size(); ++i) {
     auto& hasher = hashers[i];
     if (mode != BaseHashTable::HashMode::kHash) {
-      if (!hasher->computeValueIds(rows, lookup.hashes)) {
+      if (!hasher->computeValueIds(rows, lookup.hashes)) {//hc---computing hash code here?
         rehash = true;
       }
     } else {

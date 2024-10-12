@@ -17,6 +17,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <string>
+#include <iostream>
 
 #include "velox/common/base/Counters.h"
 #include "velox/common/base/StatsReporter.h"
@@ -607,7 +608,11 @@ RowVectorPtr Task::next(ContinueFuture* future) {
       numTotalDrivers_ += factory->numTotalDrivers;
       taskStats_.pipelineStats.emplace_back(
           factory->inputDriver, factory->outputDriver);
+      std::cout << "hc---factory_num_drivers:" << factory->numDrivers
+                << ", numTotalDrivers:" << factory->numTotalDrivers << std::endl;
     }
+    std::cout << "hc---factory_num_drivers:" << numDriversUngrouped_
+              << ", numTotalDrivers:" << numTotalDrivers_ << std::endl;
 
     // Create drivers.
     createSplitGroupStateLocked(kUngroupedGroupId);
@@ -1026,7 +1031,7 @@ std::vector<std::shared_ptr<Driver>> Task::createDriversLocked(
     uint32_t splitGroupId) {
   TestValue::adjust("facebook::velox::exec::Task::createDriversLocked", this);
   const bool groupedExecutionDrivers = (splitGroupId != kUngroupedGroupId);
-  auto& splitGroupState = splitGroupStates_[splitGroupId];
+  auto& splitGroupState = splitGroupStates_[splitGroupId];//hc---what is split group?
   const auto numPipelines = driverFactories_.size();
 
   std::vector<std::shared_ptr<Driver>> drivers;

@@ -15,6 +15,7 @@
  */
 
 #include "velox/exec/tests/utils/AssertQueryBuilder.h"
+#include <iostream>
 
 namespace facebook::velox::exec::test {
 
@@ -151,7 +152,6 @@ std::shared_ptr<Task> AssertQueryBuilder::assertResults(
     const std::string& duckDbSql,
     const std::optional<std::vector<uint32_t>>& sortingKeys) {
   VELOX_CHECK_NOT_NULL(duckDbQueryRunner_);
-
   auto [cursor, results] = readCursor();
   if (results.empty()) {
     test::assertResults(results, ROW({}, {}), duckDbSql, *duckDbQueryRunner_);
@@ -263,7 +263,9 @@ AssertQueryBuilder::readCursor() {
     if (noMoreSplits) {
       return;
     }
+    std::cout << "hc===split000" << std::endl;
     for (auto& [nodeId, nodeSplits] : splits_) {
+      std::cout << "hc===split11" << std::endl;
       for (auto& split : nodeSplits) {
         task->addSplit(nodeId, std::move(split));
       }

@@ -179,6 +179,7 @@ class RowColumn {
 };
 
 /// Collection of rows for aggregation, hash join, order by.
+//hc---key class for AGG!
 class RowContainer {
  public:
   static constexpr uint64_t kUnlimited = std::numeric_limits<uint64_t>::max();

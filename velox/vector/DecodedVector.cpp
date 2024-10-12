@@ -66,7 +66,7 @@ void DecodedVector::decode(
     case VectorEncoding::Simple::ARRAY:
     case VectorEncoding::Simple::MAP:
     case VectorEncoding::Simple::LAZY:
-      isIdentityMapping_ = true;
+      isIdentityMapping_ = true;//hc--encoding/decoding here?
       setBaseData(vector, rows);
       return;
     case VectorEncoding::Simple::CONSTANT: {

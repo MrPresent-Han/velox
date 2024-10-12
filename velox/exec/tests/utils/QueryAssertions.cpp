@@ -1435,7 +1435,7 @@ bool waitForTaskStateChange(
     auto& executor = folly::QueuedImmediateExecutor::instance();
     auto future = task->taskCompletionFuture()
                       .within(std::chrono::microseconds(maxWaitMicros))
-                      .via(&executor);
+                       .via(&executor);
     future.wait();
   }
 

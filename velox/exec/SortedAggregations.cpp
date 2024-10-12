@@ -126,7 +126,7 @@ std::unique_ptr<SortedAggregations> SortedAggregations::create(
   if (sortedAggs.empty()) {
     return nullptr;
   }
-
+  //hc--- sorted aggregations
   return std::make_unique<SortedAggregations>(sortedAggs, inputType, pool);
 }
 

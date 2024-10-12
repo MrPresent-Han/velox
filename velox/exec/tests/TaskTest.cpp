@@ -726,7 +726,7 @@ TEST_F(TaskTest, testTerminateDeadlock) {
   EXPECT_EQ(
       cursor->task()->toString().find("zombie drivers:"), std::string::npos);
 }
-
+//hc---important case
 TEST_F(TaskTest, singleThreadedExecution) {
   auto data = makeRowVector({
       makeFlatVector<int64_t>(1'000, [](auto row) { return row; }),

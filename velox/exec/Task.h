@@ -1004,6 +1004,7 @@ class Task : public std::enable_shared_from_this<Task> {
   // Root MemoryPool for this Task. All member variables that hold references
   // to pool_ must be defined after pool_, childPools_.
   std::shared_ptr<memory::MemoryPool> pool_;
+  // hc--memory pool
 
   // Keep driver and operator memory pools alive for the duration of the task
   // to allow for sharing vectors across drivers without copy.

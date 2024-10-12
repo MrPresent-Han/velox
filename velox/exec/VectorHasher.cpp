@@ -137,6 +137,7 @@ bool VectorHasher::makeValueIds(
     if (decoded_.mayHaveNulls()) {
       return makeValueIdsFlatWithNulls<T>(rows, result);
     } else {
+      //hc---no nulls is executed
       return makeValueIdsFlatNoNulls<T>(rows, result);
     }
   }

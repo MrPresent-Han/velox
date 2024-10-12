@@ -478,7 +478,7 @@ class TableScanNode : public PlanNode {
 
 class AggregationNode : public PlanNode {
  public:
-  enum class Step {
+  enum class Step {//hc--- agg step?
     // raw input in - partial result out
     kPartial,
     // partial result in - final result out
@@ -494,7 +494,7 @@ class AggregationNode : public PlanNode {
   static Step stepFromName(const std::string& name);
 
   /// Aggregate function call.
-  struct Aggregate {
+  struct Aggregate {//hc---core structure of agg
     /// Function name and input column names.
     CallTypedExprPtr call;
 

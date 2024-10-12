@@ -334,7 +334,7 @@ class SingleThreadedTaskCursor : public TaskCursorBase {
         Task::ExecutionMode::kSerial);
 
     if (!taskSpillDirectory_.empty()) {
-      task_->setSpillDirectory(taskSpillDirectory_);
+      task_->setSpillDirectory(taskSpillDirectory_); //hc---task spill to local disk?
     }
 
     VELOX_CHECK(

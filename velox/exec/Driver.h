@@ -579,7 +579,7 @@ struct DriverFactory {
   /// Can be null. We use that to determine the max drivers.
   std::shared_ptr<const core::PlanNode> consumerNode;
   /// True if the drivers in this pipeline use grouped execution strategy.
-  bool groupedExecution{false};
+  bool groupedExecution{false};//hc---what is group execution?
   /// True if 'planNodes' contains a source node for the task, e.g. TableScan
   /// or Exchange.
   bool inputDriver{false};
@@ -624,7 +624,7 @@ struct DriverFactory {
     VELOX_CHECK(!planNodes.empty());
     return planNodes.back()->id();
   }
-
+  //what is partitioned output?
   std::shared_ptr<const core::PartitionedOutputNode> needsPartitionedOutput()
       const {
     VELOX_CHECK(!planNodes.empty());

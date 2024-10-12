@@ -16,6 +16,7 @@
 #include "velox/exec/GroupingSet.h"
 #include "velox/common/testutil/TestValue.h"
 #include "velox/exec/Task.h"
+#include <iostream>
 
 using facebook::velox::common::testutil::TestValue;
 
@@ -56,7 +57,7 @@ GroupingSet::GroupingSet(
     folly::Synchronized<common::SpillStats>* spillStats)
     : preGroupedKeyChannels_(std::move(preGroupedKeys)),
       hashers_(std::move(hashers)),
-      isGlobal_(hashers_.empty()),
+      isGlobal_(hashers_.empty()),//hc--where there's no grouping keys(no using group by clause), then it's a global agg
       isPartial_(isPartial),
       isRawInput_(isRawInput),
       queryConfig_(operatorCtx->task()->queryCtx()->queryConfig()),
@@ -87,7 +88,7 @@ GroupingSet::GroupingSet(
   for (const auto& aggregate : aggregates_) {
     mayPushdown_.push_back(
         allAreSinglyReferenced(aggregate.inputs, channelUseCount));
-  }
+  }//hc--- can only push down agg when the input columns is only used in one agg
 
   sortedAggregations_ =
       SortedAggregations::create(aggregates_, inputType, &pool_);
@@ -183,7 +184,7 @@ void GroupingSet::addInput(const RowVectorPtr& input, bool mayPushdown) {
 
   activeRows_.resize(numRows);
   activeRows_.setAll();
-
+  std::cout << "hc===addInputForActiveRows" << std::endl;
   addInputForActiveRows(input, mayPushdown);
 }
 
@@ -217,7 +218,7 @@ void GroupingSet::addInputForActiveRows(
     bool mayPushdown) {
   VELOX_CHECK(!isGlobal_);
   if (!table_) {
-    createHashTable();
+    createHashTable();//hc---init hash table here
   }
   ensureInputFits(input);
 
@@ -241,7 +242,7 @@ void GroupingSet::addInputForActiveRows(
 
   auto* groups = lookup_->hits.data();
   const auto& newGroups = lookup_->newGroups;
-
+  //hc---newGroups stored grouped buckets
   for (auto i = 0; i < aggregates_.size(); ++i) {
     if (!aggregates_[i].sortingKeys.empty()) {
       continue;
@@ -260,7 +261,7 @@ void GroupingSet::addInputForActiveRows(
       continue;
     }
 
-    auto& function = aggregates_[i].function;
+    auto& function = aggregates_[i].function;//hc---what is and how aggregate functions apply
     if (!newGroups.empty()) {
       function->initializeNewGroups(groups, newGroups);
     }
@@ -329,7 +330,7 @@ void initializeAggregates(
   }
 }
 } // namespace
-
+//hc---note accumulator
 std::vector<Accumulator> GroupingSet::accumulators(bool excludeToIntermediate) {
   std::vector<Accumulator> accumulators;
   accumulators.reserve(aggregates_.size());
@@ -714,15 +715,17 @@ const SelectivityVector& GroupingSet::getSelectivityVector(
 
   return *rows;
 }
-
+//hc---aggregation is truly executed here
 bool GroupingSet::getOutput(
     int32_t maxOutputRows,
     int32_t maxOutputBytes,
     RowContainerIterator& iterator,
     RowVectorPtr& result) {
+  std::cout << "hc===GroupingSet::getOutput" << std::endl;
   TestValue::adjust("facebook::velox::exec::GroupingSet::getOutput", this);
 
   if (isGlobal_) {
+    std::cout << "hc---executed getGlobalAggregationOutput" << std::endl;
     return getGlobalAggregationOutput(iterator, result);
   }
 
@@ -741,6 +744,7 @@ bool GroupingSet::getOutput(
       ? table_->rows()->listRows(
             &iterator, maxOutputRows, maxOutputBytes, groups)
       : 0;
+  std::cout << "hc===numGroups:" << numGroups << std::endl;
   if (numGroups == 0) {
     if (table_ != nullptr) {
       table_->clear();
@@ -1298,6 +1302,7 @@ void recursiveResizeChildren(VectorPtr& vector, vector_size_t newSize) {
 void GroupingSet::toIntermediate(
     const RowVectorPtr& input,
     RowVectorPtr& result) {
+  std::cout << "hc--GroupingSet::toIntermediate" << std::endl;
   VELOX_CHECK(abandonedPartialAggregation_);
   VELOX_CHECK(result.unique());
   if (!isRawInput_) {

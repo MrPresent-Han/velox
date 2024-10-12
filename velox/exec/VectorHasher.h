@@ -547,7 +547,7 @@ class VectorHasher {
   const TypePtr type_;
   const TypeKind typeKind_;
 
-  DecodedVector decoded_;
+  DecodedVector decoded_;//hc---place to store input data
   raw_vector<uint64_t> cachedHashes_;
 
   // Single precomputed hash for constant partition keys.

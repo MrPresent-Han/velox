@@ -17,6 +17,7 @@
 #include <optional>
 #include "velox/exec/Task.h"
 #include "velox/expression/Expr.h"
+#include <iostream>
 
 namespace facebook::velox::exec {
 
@@ -55,9 +56,9 @@ void HashAggregation::initialize() {
 
   const auto& inputType = aggregationNode_->sources()[0]->outputType();
   auto hashers =
-      createVectorHashers(inputType, aggregationNode_->groupingKeys());
+      createVectorHashers(inputType, aggregationNode_->groupingKeys());//hc---need to create hashers for group keys
   auto numHashers = hashers.size();
-
+  //std::cout << "hc---num_hashers:" << numHashers << ", hashers[0]:" << hashers[0]->toString() << std::endl;
   std::vector<column_index_t> preGroupedChannels;
   preGroupedChannels.reserve(aggregationNode_->preGroupedKeys().size());
   for (const auto& key : aggregationNode_->preGroupedKeys()) {
@@ -66,7 +67,7 @@ void HashAggregation::initialize() {
   }
 
   std::shared_ptr<core::ExpressionEvaluator> expressionEvaluator;
-  std::vector<AggregateInfo> aggregateInfos = toAggregateInfo(
+  std::vector<AggregateInfo> aggregateInfos = toAggregateInfo(//hc---convert aggregations to aggregateInfos
       *aggregationNode_, *operatorCtx_, numHashers, expressionEvaluator);
 
   // Check that aggregate result type match the output type.
@@ -93,7 +94,7 @@ void HashAggregation::initialize() {
         aggregationNode_->groupId().value()->name());
     VELOX_CHECK(groupIdChannel.has_value());
   }
-
+  //hc---construct grouping set
   groupingSet_ = std::make_unique<GroupingSet>(
       inputType,
       std::move(hashers),
@@ -262,13 +263,15 @@ void HashAggregation::maybeIncreasePartialAggregationMemoryUsage(
       RuntimeCounter(
           maxPartialAggregationMemoryUsage_, RuntimeCounter::Unit::kBytes));
 }
-
+//hc---core implement here for agg
 RowVectorPtr HashAggregation::getOutput() {
+  std::cout << "hc--HashAggregation::getOutput" << std::endl;
   if (finished_) {
     input_ = nullptr;
     return nullptr;
   }
   if (abandonedPartialAggregation_) {
+    std::cout << "hc--abandonedPartialAggregation_" << std::endl;
     if (noMoreInput_) {
       finished_ = true;
     }
@@ -289,11 +292,13 @@ RowVectorPtr HashAggregation::getOutput() {
   // - running in partial streaming mode and have some output ready.
   if (!noMoreInput_ && !partialFull_ && !newDistincts_ &&
       !groupingSet_->hasOutput()) {
+    std::cout << "hc--!noMoreInput_" << std::endl;
     input_ = nullptr;
     return nullptr;
   }
 
   if (isDistinct_) {
+    std::cout << "hc--isDistinct_" << std::endl;
     return getDistinctOutput();
   }
 
@@ -308,6 +313,7 @@ RowVectorPtr HashAggregation::getOutput() {
       queryConfig.preferredOutputBatchBytes(),
       resultIterator_,
       output_);
+  std::cout << "hc===agg_output_:" << hasData << std::endl;
   if (!hasData) {
     resultIterator_.reset();
     if (noMoreInput_) {
@@ -317,6 +323,7 @@ RowVectorPtr HashAggregation::getOutput() {
     return nullptr;
   }
   numOutputRows_ += output_->size();
+  std::cout << "hc===agg_output_:" << std::endl;
   return output_;
 }
 

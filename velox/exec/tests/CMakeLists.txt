@@ -237,7 +237,6 @@ target_link_libraries(
   velox_vector_test_lib
   velox_vector_fuzzer
   gtest
-  gtest
   gtest_main)
 
 add_executable(velox_aggregation_runner_test AggregationRunnerTest.cpp)

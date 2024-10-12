@@ -39,6 +39,7 @@ std::string executionStrategyToString(ExecutionStrategy strategy);
 
 /// Contains some information on how to execute the fragment of a plan.
 /// Used to construct Task.
+//hc---PlanFragment is the core conception
 struct PlanFragment {
   /// Top level (root) Plan Node.
   std::shared_ptr<const core::PlanNode> planNode;

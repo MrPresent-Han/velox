@@ -45,6 +45,7 @@
 #include "velox/exec/Unnest.h"
 #include "velox/exec/Values.h"
 #include "velox/exec/Window.h"
+#include <iostream>
 
 namespace facebook::velox::exec {
 
@@ -133,7 +134,7 @@ OperatorSupplier makeConsumerSupplier(
   return Operator::operatorSupplierFromPlanNode(planNode);
 }
 
-void plan(
+void plan(//hc---most important entry point
     const std::shared_ptr<const core::PlanNode>& planNode,
     std::vector<std::shared_ptr<const core::PlanNode>>* currentPlanNodes,
     const std::shared_ptr<const core::PlanNode>& consumerNode,
@@ -143,13 +144,13 @@ void plan(
     driverFactories->push_back(std::make_unique<DriverFactory>());
     currentPlanNodes = &driverFactories->back()->planNodes;
     driverFactories->back()->consumerSupplier = std::move(consumerSupplier);
-    driverFactories->back()->consumerNode = consumerNode;
+    driverFactories->back()->consumerNode = consumerNode;//hc--what is consumer node?
   }
 
   const auto& sources = planNode->sources();
   if (sources.empty()) {
     driverFactories->back()->inputDriver = true;
-  } else {
+  } else {//in most cases
     for (int32_t i = 0; i < sources.size(); ++i) {
       plan(
           sources[i],
@@ -274,7 +275,7 @@ void LocalPlanner::plan(
     if (adapter.inspect) {
       adapter.inspect(planFragment);
     }
-  }
+  }//hc---initialize drivers
   detail::plan(
       planFragment.planNode,
       nullptr,
@@ -493,13 +494,15 @@ std::shared_ptr<Driver> DriverFactory::createDriver(
                 planNode)) {
       operators.push_back(
           std::make_unique<NestedLoopJoinProbe>(id, ctx.get(), joinNode));
-    } else if (
+    } else if (//hc----AGGG NODE!!!!
         auto aggregationNode =
             std::dynamic_pointer_cast<const core::AggregationNode>(planNode)) {
       if (aggregationNode->isPreGrouped()) {
+        std::cout << "hc---add StreamingAggregation agg node" << aggregationNode->toString() << std::endl;
         operators.push_back(std::make_unique<StreamingAggregation>(
             id, ctx.get(), aggregationNode));
       } else {
+        std::cout << "hc---add hash agg node" << aggregationNode->toString() << std::endl;
         operators.push_back(
             std::make_unique<HashAggregation>(id, ctx.get(), aggregationNode));
       }
@@ -607,7 +610,7 @@ std::shared_ptr<Driver> DriverFactory::createDriver(
   }
 
   driver->init(std::move(ctx), std::move(operators));
-  for (auto& adapter : adapters) {
+  for (auto& adapter : adapters) {//what does adapters do?
     if (adapter.adapt(*this, *driver)) {
       break;
     }

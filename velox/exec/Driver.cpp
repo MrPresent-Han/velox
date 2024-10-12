@@ -26,6 +26,7 @@
 #include "velox/common/time/Timer.h"
 #include "velox/exec/Operator.h"
 #include "velox/exec/Task.h"
+#include <iostream>
 
 using facebook::velox::common::testutil::TestValue;
 
@@ -640,6 +641,9 @@ StopReason Driver::runInternal(
                   curOperatorId_,
                   kOpMethodGetOutput);
               if (intermediateResult) {
+                std::cout << "hc===intermediate:" << intermediateResult->toString() << ", op_i:" << i
+                          << ";op_string:" << op->toString() << std::endl;
+                std::cout << "----------------------------------------" << std::endl;
                 VELOX_CHECK(
                     intermediateResult->size() > 0,
                     "Operator::getOutput() must return nullptr or "

@@ -25,6 +25,7 @@
 #include <duckdb/planner/expression/bound_constant_expression.hpp> // @manual
 #include <duckdb/planner/expression/bound_function_expression.hpp> // @manual
 #include <duckdb/planner/expression/bound_reference_expression.hpp> // @manual
+#include <iostream>
 
 namespace facebook::velox::core {
 
@@ -149,6 +150,7 @@ PlanNodePtr toVeloxPlan(
   for (auto i = 0; i < columnIds.size(); ++i) {
     names[i] = queryContext.nextColumnName(logicalGet.names[columnIds[i]]);
     types[i] = duckdb::toVeloxType(logicalGet.returned_types[columnIds[i]]);
+    std::cout << "hc===column_name:" << names[i] << ", type:" << types[i]->toString() << std::endl;
   }
 
   auto rowType = ROW(std::move(names), std::move(types));
@@ -168,10 +170,11 @@ PlanNodePtr toVeloxPlan(
         children.push_back(rowVector->childAt(columnIds[i]));
       }
     }
+    std::cout << "hc===row_vector:" << rowVector->toString() << std::endl;
     data.push_back(std::make_shared<RowVector>(
         pool, rowType, nullptr, rowVector->size(), children));
   }
-
+  //hc--- valuesNode is set here
   return std::make_shared<ValuesNode>(queryContext.nextNodeId(), data);
 }
 
@@ -243,7 +246,10 @@ TypedExprPtr toVeloxExpression(
       for (auto& child : agg->children) {
         children.push_back(toVeloxExpression(*child, inputType));
       }
-
+      std::cout << "hc===expression:" << expression.ToString()
+                << ", duck_return_type:" << agg->return_type.ToString()
+                << ", velox_returned_type:" << duckdb::toVeloxType(agg->return_type)->toString()
+                << std::endl;
       return std::make_shared<CallTypedExpr>(
           duckdb::toVeloxType(agg->return_type),
           std::move(children),
@@ -306,6 +312,7 @@ PlanNodePtr toVeloxPlan(
 
   bool identityProjection = true;
   for (auto& expression : logicalAggregate.expressions) {
+    std::cout << "hc_expression:" << expression->ToString() << std::endl;
     auto call = std::dynamic_pointer_cast<const CallTypedExpr>(
         toVeloxExpression(*expression, sources[0]->outputType()));
     std::vector<TypedExprPtr> fieldInputs;
@@ -344,6 +351,7 @@ PlanNodePtr toVeloxPlan(
     projections.push_back(groupingExpr);
     if (auto field = std::dynamic_pointer_cast<const FieldAccessTypedExpr>(
             groupingExpr)) {
+      std::cout << "hc--pushed a fieldAccessTypedExpr" << std::endl;
       projectNames.push_back(field->name());
       groupingKeys.push_back(field);
     } else {
@@ -351,7 +359,12 @@ PlanNodePtr toVeloxPlan(
       projectNames.push_back(queryContext.nextColumnName("_p"));
       groupingKeys.push_back(std::make_shared<FieldAccessTypedExpr>(
           groupingExpr->type(), projectNames.back()));
+      std::cout << "hc--newly create fieldAccessTypedExpr and pushed" << std::endl;
     }
+    std::cout << "hc--expression:" << expression->ToString() << std::endl;
+    std::cout << "hc--grouping_expr:" << groupingExpr->toString() << std::endl;
+    std::cout << "hc--project_name:" << projectNames.back()<< std::endl;
+    std::cout << "hc-------------------------------------:" << std::endl;
   }
 
   auto source = sources[0];
@@ -413,6 +426,8 @@ PlanNodePtr toVeloxPlan(
     memory::MemoryPool* pool,
     QueryContext& queryContext) {
   std::vector<PlanNodePtr> sources;
+  std::cout << "hc===duck_plan:" << std::endl;
+  std::cout << plan.ToString() << "; plan_type" << LogicalOperatorToString(plan.type) << std::endl;
   for (auto& child : plan.children) {
     sources.push_back(toVeloxPlan(*child, pool, queryContext));
   }

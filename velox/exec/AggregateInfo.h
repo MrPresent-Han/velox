@@ -25,7 +25,7 @@ class Aggregate;
 /// Information needed to evaluate an aggregate function.
 struct AggregateInfo {
   /// Instance of the Aggregate class.
-  std::unique_ptr<Aggregate> function;
+  std::unique_ptr<Aggregate> function;//hc----agg function here
 
   /// Indices of the input columns in the input RowVector.
   std::vector<column_index_t> inputs;

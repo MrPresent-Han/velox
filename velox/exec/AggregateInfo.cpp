@@ -18,6 +18,7 @@
 #include "velox/exec/Aggregate.h"
 #include "velox/exec/Operator.h"
 #include "velox/expression/Expr.h"
+#include <iostream>
 
 namespace facebook::velox::exec {
 
@@ -28,10 +29,11 @@ std::vector<core::LambdaTypedExprPtr> extractLambdaInputs(
   for (const auto& arg : aggregate.call->inputs()) {
     if (auto lambda =
             std::dynamic_pointer_cast<const core::LambdaTypedExpr>(arg)) {
+      std::cout << "hc====aggregate" << aggregate.call->name() << ", input:" << arg->toString() << ", lambda:" << lambda << std::endl;
       lambdas.push_back(lambda);
     }
   }
-
+  //hc--- the meaning of LambdaTypedExpr
   return lambdas;
 }
 } // namespace
@@ -102,7 +104,12 @@ std::vector<AggregateInfo> toAggregateInfo(
         aggregate.rawInputTypes,
         aggResultType,
         operatorCtx.driverCtx()->queryConfig());
-
+    ////////////////////////////////////////////////////////////////////////////////
+    std::cout << "hc--aggregate:" << aggregate.call->name() << ", aggResultType:" << aggResultType->toString() << std::endl;
+    for(int w = 0; w < aggregate.rawInputTypes.size(); w++) {
+      std::cout << "hc---rawInputType_" << w << ":" << aggregate.rawInputTypes[w]->toString() << ",i:" << i << std::endl;
+    }
+    ////////////////////////////////////////////////////////////////////////////////
     auto lambdas = extractLambdaInputs(aggregate);
     if (!lambdas.empty()) {
       if (expressionEvaluator == nullptr) {
@@ -135,7 +142,7 @@ std::vector<AggregateInfo> toAggregateInfo(
 
 std::vector<std::optional<column_index_t>> extractMaskChannels(
     const std::vector<AggregateInfo>& aggregates) {
-  std::vector<std::optional<column_index_t>> masks;
+  std::vector<std::optional<column_index_t>> masks;//hc---masks are the array of columns
   masks.reserve(aggregates.size());
   for (const auto& aggregate : aggregates) {
     masks.push_back(aggregate.mask);

@@ -98,6 +98,16 @@ class VeloxIn10MinDemo : public VectorTestBase {
   /// Run the demo.
   void run();
 
+  void runExpr1(RowVectorPtr data, FlatVectorPtr<EvalType<int64_t>> vec1, FlatVectorPtr<EvalType<int64_t>> vec2);
+  void runExpr2(RowVectorPtr data);
+  void runQuery1(RowVectorPtr data);
+  void runQuery2(RowVectorPtr data);
+  void runQuery3(RowVectorPtr data);
+  void runQuery4(RowVectorPtr data);
+  void runQuery5(RowVectorPtr data);
+  void runTPC1(RowVectorPtr data);
+  void runTPC2(RowVectorPtr data);
+
   std::shared_ptr<folly::Executor> executor_{
       std::make_shared<folly::CPUThreadPoolExecutor>(
           std::thread::hardware_concurrency())};
@@ -107,25 +117,7 @@ class VeloxIn10MinDemo : public VectorTestBase {
       std::make_unique<core::ExecCtx>(pool_.get(), queryCtx_.get())};
 };
 
-void VeloxIn10MinDemo::run() {
-  // Let’s create two vectors of 64-bit integers and one vector of strings.
-  auto a = makeFlatVector<int64_t>({0, 1, 2, 3, 4, 5, 6});
-  auto b = makeFlatVector<int64_t>({0, 5, 10, 15, 20, 25, 30});
-  auto dow = makeFlatVector<std::string>(
-      {"monday",
-       "tuesday",
-       "wednesday",
-       "thursday",
-       "friday",
-       "saturday",
-       "sunday"});
-
-  auto data = makeRowVector({"a", "b", "dow"}, {a, b, dow});
-
-  std::cout << std::endl
-            << "> vectors a, b, dow: " << data->toString() << std::endl;
-  std::cout << data->toString(0, data->size()) << std::endl;
-
+void VeloxIn10MinDemo::runExpr1(RowVectorPtr data, FlatVectorPtr<EvalType<int64_t>> vec1, FlatVectorPtr<EvalType<int64_t>> vec2) {
   // Expressions.
 
   // Now, let’s compute a sum of 'a' and 'b' by evaluating 'a + b' expression.
@@ -141,7 +133,7 @@ void VeloxIn10MinDemo::run() {
   // Now we are ready to evaluate the expression on a batch of data.
   auto c = evaluate(*exprSet, data);
 
-  auto abc = makeRowVector({"a", "b", "c"}, {a, b, c});
+  auto abc = makeRowVector({"a", "b", "c"}, {vec1, vec2, c});
 
   std::cout << std::endl << "> a, b, a + b: " << abc->toString() << std::endl;
   std::cout << abc->toString(0, c->size()) << std::endl;
@@ -154,15 +146,17 @@ void VeloxIn10MinDemo::run() {
 
   auto d = evaluate(*exprSet, data);
 
-  auto abd = makeRowVector({"a", "b", "d"}, {a, b, d});
+  auto abd = makeRowVector({"a", "b", "d"}, {vec1, vec2, d});
 
   std::cout << std::endl
             << "> a, b, 2 * a + b % 3: " << abd->toString() << std::endl;
   std::cout << abd->toString(0, d->size()) << std::endl;
+}
 
+void VeloxIn10MinDemo::runExpr2(facebook::velox::RowVectorPtr data) {
   // Let's transform 'dow' column into a 3-letter prefix with first letter
   // capitalized, e.g. Mon, Tue, etc.
-  exprSet = compileExpression(
+  auto exprSet = compileExpression(
       "concat(upper(substr(dow, 1, 1)), substr(dow, 2, 2))",
       asRowType(data->type()));
 
@@ -175,12 +169,11 @@ void VeloxIn10MinDemo::run() {
   std::cout << std::endl
             << "> short days of week: " << shortDow->toString() << std::endl;
   std::cout << shortDow->toString(0, shortDow->size()) << std::endl;
+}
 
-  // Queries.
-
+void VeloxIn10MinDemo::runQuery1(RowVectorPtr data) {
   // Let's compute sum and average of 'a' and 'b' by creating
   // and executing a query plan with an aggregation node.
-
   auto plan = PlanBuilder()
                   .values({data})
                   .singleAggregation(
@@ -197,21 +190,11 @@ void VeloxIn10MinDemo::run() {
             << "> sum and average for a and b: " << sumAvg->toString()
             << std::endl;
   std::cout << sumAvg->toString(0, sumAvg->size()) << std::endl;
+}
 
-  // Now, let's sort by 'a' descending.
-
-  plan = PlanBuilder().values({data}).orderBy({"a DESC"}, false).planNode();
-
-  auto sorted = AssertQueryBuilder(plan).copyResults(pool());
-
-  std::cout << std::endl
-            << "> data sorted on 'a' in descending order: "
-            << sorted->toString() << std::endl;
-  std::cout << sorted->toString(0, sorted->size()) << std::endl;
-
+void VeloxIn10MinDemo::runQuery2(facebook::velox::RowVectorPtr data) {
   // And take top 3 rows.
-
-  plan = PlanBuilder().values({data}).topN({"a DESC"}, 3, false).planNode();
+  auto plan = PlanBuilder().values({data}).topN({"a DESC"}, 3, false).planNode();
 
   auto top3 = AssertQueryBuilder(plan).copyResults(pool());
 
@@ -219,9 +202,22 @@ void VeloxIn10MinDemo::run() {
             << "> top 3 rows as sorted on 'a' in descending order: "
             << top3->toString() << std::endl;
   std::cout << top3->toString(0, top3->size()) << std::endl;
+}
 
-  // We can also filter rows that have even values of 'a'.
-  plan = PlanBuilder().values({data}).filter("a % 2 == 0").planNode();
+void VeloxIn10MinDemo::runQuery3(facebook::velox::RowVectorPtr data) {
+  auto plan = PlanBuilder().values({data}).topN({"a DESC"}, 3, false).planNode();
+
+  auto top3 = AssertQueryBuilder(plan).copyResults(pool());
+
+  std::cout << std::endl
+            << "> top 3 rows as sorted on 'a' in descending order: "
+            << top3->toString() << std::endl;
+  std::cout << top3->toString(0, top3->size()) << std::endl;
+}
+
+void VeloxIn10MinDemo::runQuery4(facebook::velox::RowVectorPtr data) {
+  //We can also filter rows that have even values of 'a'.
+  auto plan = PlanBuilder().values({data}).filter("a % 2 == 0").planNode();
 
   auto evenA = AssertQueryBuilder(plan).copyResults(pool());
 
@@ -229,12 +225,27 @@ void VeloxIn10MinDemo::run() {
             << "> rows with even values of 'a': " << evenA->toString()
             << std::endl;
   std::cout << evenA->toString(0, evenA->size()) << std::endl;
+}
 
+void VeloxIn10MinDemo::runQuery5(facebook::velox::RowVectorPtr data) {
+  // Now, let's sort by 'a' descending.
+
+  auto plan = PlanBuilder().values({data}).orderBy({"a DESC"}, false).planNode();
+
+  auto sorted = AssertQueryBuilder(plan).copyResults(pool());
+
+  std::cout << std::endl
+            << "> data sorted on 'a' in descending order: "
+            << sorted->toString() << std::endl;
+  std::cout << sorted->toString(0, sorted->size()) << std::endl;
+}
+
+void VeloxIn10MinDemo::runTPC1(facebook::velox::RowVectorPtr data) {
   // Now, let's read some data from the TPC-H connector which generates TPC-H
   // data on the fly. We are going to read columns n_nationkey and n_name from
   // nation table and print first 10 rows.
 
-  plan = PlanBuilder()
+  auto plan = PlanBuilder()
              .tpchTableScan(
                  tpch::Table::TBL_NATION,
                  {"n_nationkey", "n_name"},
@@ -248,7 +259,9 @@ void VeloxIn10MinDemo::run() {
             << "> first 10 rows from TPC-H nation table: "
             << nations->toString() << std::endl;
   std::cout << nations->toString(0, 10) << std::endl;
+}
 
+void VeloxIn10MinDemo::runTPC2(facebook::velox::RowVectorPtr data) {
   // Let's join TPC-H nation and region tables to count number of nations in
   // each region and sort results by region name. We need to use one TableScan
   // node for nations table and another for region table. We also need to
@@ -260,7 +273,7 @@ void VeloxIn10MinDemo::run() {
   auto planNodeIdGenerator = std::make_shared<core::PlanNodeIdGenerator>();
   core::PlanNodeId nationScanId;
   core::PlanNodeId regionScanId;
-  plan = PlanBuilder(planNodeIdGenerator)
+  auto plan = PlanBuilder(planNodeIdGenerator)
              .tpchTableScan(
                  tpch::Table::TBL_NATION, {"n_regionkey"}, 1 /*scaleFactor*/)
              .capturePlanNodeId(nationScanId)
@@ -289,6 +302,30 @@ void VeloxIn10MinDemo::run() {
             << "> number of nations per region in TPC-H: "
             << nationCnt->toString() << std::endl;
   std::cout << nationCnt->toString(0, 10) << std::endl;
+}
+
+
+void VeloxIn10MinDemo::run() {
+  // Let’s create two vectors of 64-bit integers and one vector of strings.
+  auto a = makeFlatVector<int64_t>({0, 1, 2, 3, 4, 5, 6});
+  auto b = makeFlatVector<int64_t>({0, 5, 10, 15, 20, 25, 30});
+  auto dow = makeFlatVector<std::string>(
+      {"monday",
+       "tuesday",
+       "wednesday",
+       "thursday",
+       "friday",
+       "saturday",
+       "sunday"});
+
+  auto data = makeRowVector({"a", "b", "dow"}, {a, b, dow});
+
+  std::cout << std::endl
+            << "> vectors a, b, dow: " << data->toString() << std::endl;
+  std::cout << data->toString(0, data->size()) << std::endl;
+
+  // Queries.
+  runQuery1(data);
 }
 
 int main(int argc, char** argv) {
